@@ -1,0 +1,55 @@
+name: Collect GitHub Stats
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # Every day at 6:00 AM UTC
+  workflow_dispatch:       # Allow manual trigger from GitHub UI
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # Needed to commit the DB back to the repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Download existing database (if cached)
+        uses: actions/cache@v4
+        with:
+          path: github_stats.db
+          key: github-stats-db-${{ github.run_id }}
+          restore-keys: |
+            github-stats-db-
+
+      - name: Run collector
+        env:
+          GITHUB_TOKEN: ${{ secrets.STATS_TOKEN }}
+          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
+          DB_PATH: github_stats.db
+        run: python collect_stats.py
+
+      - name: Save database to cache
+        uses: actions/cache/save@v4
+        with:
+          path: github_stats.db
+          key: github-stats-db-${{ github.run_id }}
+
+      - name: Commit updated database to repo
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add github_stats.db
+          git diff --staged --quiet || git commit -m "chore: update stats DB [$(date -u +%Y-%m-%d)]"
+          git push
