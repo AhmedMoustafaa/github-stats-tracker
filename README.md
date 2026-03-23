@@ -103,7 +103,7 @@ git push origin main
 
 3. Add two **Repository secrets**:
    - `STATS_TOKEN` → your Personal Access Token from Step 1
-   - `GITHUB_USERNAME` → your GitHub username (e.g. `ahmed`)
+   - `GH_USERNAME` → your GitHub username (e.g. `ahmed`)
 
 4. Go to **Actions** tab → find **"Collect GitHub Stats"** → click **"Run workflow"** to test it manually
 
